@@ -90,13 +90,15 @@ doc = process_text(spacy_model, text)
 
 split_sents = st.sidebar.checkbox("Split sentences", value=True)
 
-st.header("Keywords")
-st.write("topic rank")
-
 docs = [span.as_doc() for span in doc.sents] if split_sents else [doc]
-for sent in docs:
-    keywords = get_keywords_topicrank(sent.text)
-    st.write(keywords)
+
+if GET_KEYWORDS: 
+    st.header("Keywords")
+    st.write("topic rank")
+
+    for sent in docs:
+        keywords = get_keywords_topicrank(sent.text)
+        st.write(keywords)
 
 
 st.header("Sentiment")
