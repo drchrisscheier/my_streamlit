@@ -6,7 +6,7 @@ from spacy import displacy
 import pandas as pd
 
 
-SPACY_MODEL_NAMES = ["en_core_web_sm", "en_core_web_md", "de_core_news_sm"]
+SPACY_MODEL_NAMES = ["en_core_web_sm", "de_core_news_sm"]
 DEFAULT_TEXT = "Mark Zuckerberg is the CEO of Facebook."
 HTML_WRAPPER = """<div style="overflow-x: auto; border: 1px solid #e6e9ef; border-radius: 0.25rem; padding: 1rem; margin-bottom: 2.5rem">{}</div>"""
 
@@ -25,9 +25,7 @@ def process_text(model_name, text):
 st.sidebar.title("Interactive spaCy visualizer")
 st.sidebar.markdown(
     """
-Process text with [spaCy](https://spacy.io) models and visualize named entities,
-dependencies and more. Uses spaCy's built-in
-[displaCy](http://spacy.io/usage/visualizers) visualizer under the hood.
+brAInsuite - DEMO / TEST - NLP 
 """
 )
 
