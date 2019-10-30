@@ -1,14 +1,63 @@
+# coding: utf-8
+"""
+Example of a Streamlit app for an interactive spaCy model visualizer. You can
+either download the script, or point streamlit run to the raw URL of this
+file. For more details, see https://streamlit.io.
+Installation:
+pip install streamlit
+python -m spacy download en_core_web_sm
+python -m spacy download en_core_web_md
+python -m spacy download de_core_news_sm
+Usage:
+streamlit run streamlit_spacy.py
+"""
 from __future__ import unicode_literals
 
 import streamlit as st
 import spacy
 from spacy import displacy
+from spacy.lang.en.stop_words import STOP_WORDS
+
 import pandas as pd
+from textblob import TextBlob
+import pke
 
-
-SPACY_MODEL_NAMES = ["en_core_web_sm", "de_core_news_sm"]
-DEFAULT_TEXT = "Mark Zuckerberg is the CEO of Facebook."
+DEFAULT_TEXT = "Mark Zuckerberg is the CEO of Facebook. \n He is a great guy! \n No, he is a BAD guy!! \n No, he is an ok guy..."
 HTML_WRAPPER = """<div style="overflow-x: auto; border: 1px solid #e6e9ef; border-radius: 0.25rem; padding: 1rem; margin-bottom: 2.5rem">{}</div>"""
+
+SPACY_MODEL_NAMES = []
+lang = "en"
+if lang == "en": 
+    SPACY_MODEL_NAMES += ["en_core_web_sm"]
+
+stopwords = STOP_WORDS
+
+def get_keywords_topicrank(text, lang=lang, n_keywords=5, stopwords=stopwords, normalization=None, return_scores = False): 
+
+    # initialize keyphrase extraction model, here TopicRank
+    extractor = pke.unsupervised.TopicRank()
+    # load the content of the document and perform French stemming
+
+    extractor.load_document(input=text,
+                        language=lang,
+                        normalization=normalization)
+
+    # keyphrase candidate selection, here sequences of nouns and adjectives
+    # defined by the Universal PoS tagset
+    extractor.candidate_selection(pos={"NOUN", "PROPN" "ADJ"}, stoplist=list(stopwords))
+
+    # candidate weighting, here using a random walk algorithm
+    extractor.candidate_weighting()
+
+    # N-best selection, keyphrases contains the 10 highest scored candidates as
+    # (keyphrase, score) tuples
+    keyphrases = extractor.get_n_best(n=n_keywords)
+
+    if not return_scores:
+        kws = [k[0] for k in keyphrases]
+        return kws
+    else:
+        return keyphrases
 
 
 @st.cache(allow_output_mutation=True)
@@ -22,10 +71,12 @@ def process_text(model_name, text):
     return nlp(text)
 
 
-st.sidebar.title("brAInsuite - DEMO / TEST - NLP ")
+st.sidebar.title("brAInsuite Demo/Test Lab - NLP ")
 st.sidebar.markdown(
     """
-App to expose/test/optimize brAInsuite functionality 
+features (growing): 
+- spacy functionality
+- sentiment (1 of many)
 """
 )
 
@@ -37,13 +88,41 @@ model_load_state.empty()
 text = st.text_area("Text to analyze", DEFAULT_TEXT)
 doc = process_text(spacy_model, text)
 
+split_sents = st.sidebar.checkbox("Split sentences", value=True)
+
+st.header("Keywords")
+st.write("topic rank")
+
+docs = [span.as_doc() for span in doc.sents] if split_sents else [doc]
+for sent in docs:
+    keywords = get_keywords_topicrank(sent.text)
+    st.write(keywords)
+
+
+st.header("Sentiment")
+split_sents = st.sidebar.checkbox("Split sentences", value=True)
+
+docs = [span.as_doc() for span in doc.sents] if split_sents else [doc]
+for sent in docs:
+    sentiment = TextBlob(sent.text).polarity
+    st.write(sent.text, sentiment)
+
+
+#sent_df = pd.DataFrame({"text": text})
+#sent_df["cleaned"] = list(clean_text_soft(sent_df.text))
+#sent_df["lemma_tokens"] = list(lemmatize_text_soft(sent_df["cleaned"],lang=lang))
+#sent_df["lemma_tokens"] = sent_df["lemma_tokens"].apply(lambda w: " ".join(w))
+
+#textblob
+#sent_df["sentiment_tb"] = sent_df["lemma_tokens"].apply(lambda text: TextBlob(text).polarity)
+
+
 if "parser" in nlp.pipe_names:
     st.header("Dependency Parse & Part-of-speech tags")
     st.sidebar.header("Dependency Parse")
-    split_sents = st.sidebar.checkbox("Split sentences", value=True)
     collapse_punct = st.sidebar.checkbox("Collapse punctuation", value=True)
-    collapse_phrases = st.sidebar.checkbox("Collapse phrases")
-    compact = st.sidebar.checkbox("Compact mode")
+    collapse_phrases = st.sidebar.checkbox("Collapse phrases",value=True)
+    compact = st.sidebar.checkbox("Compact mode",value=True)
     options = {
         "collapse_punct": collapse_punct,
         "collapse_phrases": collapse_phrases,
@@ -123,12 +202,3 @@ if st.button("Show token attributes"):
     data = [[str(getattr(token, attr)) for attr in attrs] for token in doc]
     df = pd.DataFrame(data, columns=attrs)
     st.dataframe(df)
-
-
-st.header("JSON Doc")
-if st.button("Show JSON Doc"):
-    st.json(doc.to_json())
-
-st.header("JSON model meta")
-if st.button("Show JSON model meta"):
-    st.json(nlp.meta)
