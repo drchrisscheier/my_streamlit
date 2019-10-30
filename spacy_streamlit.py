@@ -22,10 +22,10 @@ def process_text(model_name, text):
     return nlp(text)
 
 
-st.sidebar.title("Interactive spaCy visualizer")
+st.sidebar.title("brAInsuite - DEMO / TEST - NLP ")
 st.sidebar.markdown(
     """
-brAInsuite - DEMO / TEST - NLP 
+App to expose/test/optimize brAInsuite functionality 
 """
 )
 
