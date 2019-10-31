@@ -304,7 +304,7 @@ if WORD_CLOUD:
 
 import os
 import ftfy
-st.write(os.getcwd())
+st.write("Choose a data set...")
 #os.chdir(r"C:\Users\us1145\Desktop\DataFrames/")
 #home = os.environ
 #st.write(home)
@@ -318,6 +318,7 @@ if st.sidebar.button("Click to load data"):
     with st.spinner("Loading "+ file_select + " ..."):
         data_df = pd.read_excel(file_select)
     st.success("File loaded!")
+    st.write("Number of entries: ", len(data_df))
     pd.set_option('display.max_colwidth', -1)
     import time
     with st.spinner(text='processing data...'):
@@ -371,7 +372,9 @@ if data_loaded:
         df.loc[df[dep_data_col] < cut_off, 'label'] = group2_name   
         df.dropna(inplace=True, axis=0)
 
-        st_corpus = scatter_text.CorpusFromParsedDocuments(df, category_col='label', parsed_col='nlp').build().remove_terms(stopwords, ignore_absences=True)
+        df["lemmas"] = df["nlp"].apply(lambda doc: [tok.text for tok in doc if not tok.is_punct and not tok.is_stop and len(tok.text) > 1])
+        df["lemmas"] = df["lemmas"].apply(lambda text: nlp(" ".join(text)))
+        st_corpus = scatter_text.CorpusFromParsedDocuments(df, category_col='label', parsed_col='lemmas').build().remove_terms(stopwords, ignore_absences=True)
         return st_corpus
 
     # calculate the table we want to show to user
