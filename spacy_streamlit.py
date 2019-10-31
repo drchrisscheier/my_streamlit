@@ -319,7 +319,9 @@ if st.sidebar.button("Click to load data"):
         data_df = pd.read_excel(file_select)
     st.success("File loaded!")
     pd.set_option('display.max_colwidth', -1)
-    data_df["cleaned"] = data_df["Review"].map(ftfy.fix_text)
+    st.write("Processing data...")
+    data_df["cleaned"] = data_df["Review"].apply(lambda text: ftfy.fix_text if isinstance(text, str) else "UNK")
+    
     data_df["nlp"] = data_df["cleaned"].apply(nlp)
     data_df["lemma"] = data_df["nlp"].apply(lambda doc: " ".join([tok.text for tok in doc if not tok.is_stop and not tok.is_punct]))
     st.dataframe(data_df)
