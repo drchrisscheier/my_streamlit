@@ -360,3 +360,29 @@ if data_loaded:
     for i, topic_ngrams in enumerate(model.get_topics(n_words=20)):
         topic_ngrams = [ngram[0] for ngram in topic_ngrams if ngram[1] > 0]
         st.write("Topic #{}: {}".format(i+1, ", ".join(topic_ngrams)))
+        
+        
+    import scattertext as scatter_text       
+    st.header("Scatter Text")
+    def get_scattertext_corpus(df, dep_data_col, group1_name, group2_name, lang="en"):
+ 
+        cut_off = 3 # nur als Beispiel! muss letztlich vom User angegeben werden wie er die Gruppen bestimmen will (falls er nicht schon gelabelte Daten hoch lädt)
+        df.loc[df[dep_data_col] > cut_off, 'label'] = group1_name
+        df.loc[df[dep_data_col] < cut_off, 'label'] = group2_name   
+        df.dropna(inplace=True, axis=0)
+
+        st_corpus = scatter_text.CorpusFromParsedDocuments(df, category_col='label', parsed_col='nlp').build().remove_terms(stopwords, ignore_absences=True)
+        return st_corpus
+
+    # calculate the table we want to show to user
+    def get_scattertext_tables(df, dep_data_col, group1_name, group2_name, lang="en"):
+        st_corpus = get_scattertext_corpus(df, dep_data_col, group1_name, group2_name, lang=lang)
+        term_freq_df = st_corpus.get_term_freq_df()
+
+        term_freq_df[group1_name] = st_corpus.get_scaled_f_scores(group1_name)
+        term_freq_df[group2_name] = st_corpus.get_scaled_f_scores(group2_name)
+        term_freq_df = term_freq_df.sort_values(by=group1_name, ascending=False)
+        return term_freq_df
+    
+    term_freq_df = get_scattertext_tables(data_df,  "Rating", "High Rating", "Low Rating" )
+    st.dataframe(term_freq_df)
